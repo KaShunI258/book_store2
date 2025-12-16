@@ -35,47 +35,6 @@ class BookDB:
         row = cursor.fetchone()
         return row[0]
 
-    def get_book_info(self, start, size) -> [Book]:
-        books = []
-        conn = sqlite.connect(self.book_db)
-        cursor = conn.execute(
-            "SELECT id, title, author, "
-            "publisher, original_title, "
-            "translator, pub_year, pages, "
-            "price, currency_unit, binding, "
-            "isbn, author_intro, book_intro, "
-            "tags FROM book ORDER BY id "
-            "LIMIT ? OFFSET ?", (size, start))
-        for row in cursor:
-            book = Bookinit()
-            book.id = row[0]
-            book.title = row[1]
-            book.author = row[2]
-            book.publisher = row[3]
-            book.original_title = row[4]
-            book.translator = row[5]
-            book.pub_year = row[6]
-            book.pages = row[7]
-            book.price = row[8]
-            book.currency_unit = row[9]
-            book.binding = row[10]
-            book.isbn = row[11]
-            book.author_intro = row[12]
-            book.book_intro = row[13]
-            # book.content = row[14]
-            tags = row[14]
-            # picture = row[16]
-
-            for tag in tags.split("\n"):
-                if tag.strip() != "":
-                    book.tags.append(tag)
-            # for i in range(0, random.randint(0, 9)):
-            #     if picture is not None:
-            #         encode_str = base64.b64encode(picture).decode('utf-8')
-            #         book.pictures.append(encode_str)
-            books.append(book)
-        return books
-
     def send_info_to_db(self, start, size):
         DBSession = sessionmaker(bind=engine)
         session = DBSession()
@@ -147,8 +106,8 @@ def insert_tags():
     row = session.execute(text("SELECT book_id, tags FROM book;")).fetchall()
     m = 0
     for i in row:
-        tmp = i.tags.replace("'", "").replace("[", "").replace("]",
-                                                               "").split(", ")
+        tmp = i.tags.replace("'", "").replace("[", "").replace("]","").split(", ")
+                                                               
         for j in tmp:
             session.execute(
                 text("INSERT into search_tags(search_id, tags, book_id) VALUES (%d, '%s', %d)"
