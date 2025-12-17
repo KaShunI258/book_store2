@@ -1,0 +1,113 @@
+import os
+from pymongo import MongoClient
+
+import simplejson as json
+from psycopg2 import sql
+import psycopg2
+import re
+class Book:
+    id: str
+    title: str
+    author: str
+    publisher: str
+    original_title: str
+    translator: str
+    pub_year: str
+    pages: int
+    price: int
+    currency_unit: str
+    binding: str
+    isbn: str
+    author_intro: str
+    book_intro: str
+    content: str
+    tags: [str]
+    pictures: [bytes]
+
+    def __init__(self):
+        self.tags = []
+        self.pictures = []
+
+
+class BookDB:
+    def __init__(self, large: bool = False):
+        # parent_path = os.path.dirname(os.path.dirname(__file__))
+        # self.db_s = os.path.join(parent_path, "data/book.db")
+        # self.db_l = os.path.join(parent_path, "data/book_lx.db")
+        # if large:
+        #     self.book_db = self.db_l
+        # else:
+        #     self.book_db = self.db_s
+        self.connection = psycopg2.connect(
+            dbname='bookstore', 
+            user='postgres',  
+            password='159753',  
+            host='localhost',
+            port='5432'  
+        )
+        self.connection.autocommit = True
+        self.cursor = self.connection.cursor()
+
+
+    def get_book_count(self):
+        self.cursor.execute("SELECT COUNT(*) FROM book;")
+        count = self.cursor.fetchone()[0]
+        return count
+
+    def get_book_info(self, start, size) -> [Book]:
+        books = []
+        # conn = sqlite.connect(self.book_db)
+        # cursor = conn.execute(
+        #     "SELECT id, title, author, "
+        #     "publisher, original_title, "
+        #     "translator, pub_year, pages, "
+        #     "price, currency_unit, binding, "
+        #     "isbn, author_intro, book_intro, "
+        #     "content, tags, picture FROM book ORDER BY id "
+        #     "LIMIT ? OFFSET ?",
+        #     (size, start),
+        # )
+        query = """
+            SELECT book_id, title, author, publisher, original_title, translator,
+                   pub_year, pages, original_price, currency_unit, binding, isbn, 
+                   author_intro, book_intro,tags
+            FROM book
+            ORDER BY book_id
+            LIMIT %s OFFSET %s;
+        """
+        self.cursor.execute(query, (size, start))
+        rows = self.cursor.fetchall()
+
+        for row in rows:
+            book = Book()
+            book.id = row[0]
+            book.title = row[1]
+            book.author = row[2]
+            book.publisher = row[3]
+            book.original_title = row[4]
+            book.translator = row[5]
+            book.pub_year = row[6]
+            book.pages = row[7]
+            book.price = row[8]
+            book.currency_unit = row[9]
+            book.binding = row[10]
+            book.isbn = row[11]
+            book.author_intro = row[12]
+            book.book_intro = row[13]
+            # book.content = row[14]
+            tags = row[14]
+
+            # 处理标签
+            if tags:
+                for tag in tags.split("\n"):
+                    if tag.strip():
+                        cleaned_str = re.sub(r'[\[\]]', '', tag)
+                        result = [item.strip().strip("'") for item in cleaned_str.split(',')]
+                        book.tags.append(result)
+
+
+            
+            books.append(book)
+          
+
+        return books
